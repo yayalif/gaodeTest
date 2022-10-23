@@ -48,7 +48,7 @@
             visibility: hidden;
             border-radius: 15%;
             position: absolute;
-            top: 10px;
+            top: 20px;
             left: 70%;
             background: black;
             opacity:0.6;
@@ -75,9 +75,27 @@
             top: 2px;
             left: 14px;
         }
+        .Img_close{
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 0;
+            height: 0;
+            visibility: hidden;
+        }
+        .img_open{
+            position: absolute;
+            height: 600px;
+            visibility: visible;
+            top: calc(50% - 300px);
+            left: calc(50% - 300px);
+            transition: width 500ms, height 500ms;
+        }
         .masker {
+            position: absolute;
+            top: 0;
             width: 100%;
-            height 100%;
+            height: 100%;
             opacity: 0.3;
             background: black;
             visibility: hidden;
@@ -87,11 +105,13 @@
 <body>
 <div class="pageContainer">
     <div id="container"></div>
-    <div class="masker"></div>
+    <div id="idMasker" class="masker "></div>
     <video id="idVideo" class="video_close" onmouseover="showClosebtn()" controls autoplay >
         您的浏览器不能支持HTML5视频
     </video>
-    <div id="idClosebtn" class="closebtn" onclick="onCloseVideo()"></div>
+    <img id="idImg" class="Img_close" onmouseover="showClosebtn()">
+    </img>
+    <div id="idClosebtn" class="closebtn" onclick="onCloseVideoOrImg()"></div>
 </div>
 <!-- <div class="info" id="text">
     请用鼠标在地图上操作试试
@@ -115,9 +135,15 @@
 <script type="text/javascript">
     //初始化地图对象，加载地图
     var map = new AMap.Map("container", {
-        resizeEnable: true
+        resizeEnable: true,
+        center: [109.228332, 34.667975]
     });
-
+    var marker = new AMap.Marker({
+        content:'<div id="fileContainer"><input id="fileMarker" type="file" onchange="onFileClick()"></input></div>',
+        icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+        position: [109.228332, 34.667975]
+    });
+    map.add(marker);
 
 
     function showInfoClick(e){
@@ -158,19 +184,46 @@
     // document.getElementById("clickOff").onclick = clickOff;
     map.on('click', showInfoClick);
     function onFileClick() {
+        // clear
+        this._closeVideo();
+        this._closeImg();
+        this._clearMasker();
+
         var file = document.getElementById('fileMarker').files[0];
-        console.log(file);
-
-        var url = URL.createObjectURL(file);
-
-        console.log(url);
-
-        var video = document.getElementById("idVideo");
-        if( video ) {
-            video.src = url;
-            video.className = 'video_open';
-
+        if(file) {
+            // add mask
+            document.getElementById('idMasker').style.visibility = 'visible';
         }
+        console.log(file);
+        this.isVideoOn = true;
+        // imge
+        if( file.type.indexOf('image') > -1 ) {
+            this.isVideoOn = false;
+            var img = document.getElementById("idImg");
+            var reads = new window.FileReader();
+            reads.readAsDataURL( file );
+            reads.onload  = function( e ) {
+                img.src = this.result;
+                img.className = 'img_open';
+            }
+        }
+
+        // video
+        if( file.type.indexOf('video') > -1 ) {
+            var url = URL.createObjectURL(file);
+
+            console.log(url);
+
+            var video = document.getElementById("idVideo");
+            if( video ) {
+                video.src = url;
+                video.className = 'video_open';
+
+            }
+        }
+
+        // clear
+        document.getElementById('fileMarker').value = '';
     }
     function removeMarker( event ) {
         event.preventEvent();
@@ -179,19 +232,35 @@
     }
     function showClosebtn() {
         document.getElementById('idClosebtn').style.visibility = 'visible';
-        setTimeout(() => {
-            document.getElementById('idClosebtn').style.visibility = 'hidden';
-        }, 3000);
+        // setTimeout(() => {
+        //     document.getElementById('idClosebtn').style.visibility = 'hidden';
+        // }, 3000);
     }
     function hideClosebtn() {
         document.getElementById('idClosebtn').style.visibility = 'hidden';
     }
-    function onCloseVideo() {
-        document.getElementById('idVideo').pause();
-        document.getElementById('idVideo').className = 'video_close';
-        document.getElementById('idClosebtn').style.visibility = 'hidden';
+    function onCloseVideoOrImg() {
+        this._clearMasker();
+        this._closeVideo();
+        this._closeImg();
+        this.hideClosebtn();
     }
-
+    function _closeVideo() {
+        if( document.getElementById('idVideo') ) {
+            document.getElementById('idVideo').pause();
+            document.getElementById('idVideo').className = 'video_close';
+        }
+    }
+    function _closeImg() {
+        if( document.getElementById('idImg') ) {
+            document.getElementById('idImg').className = 'Img_close';
+        }
+    }
+    function _clearMasker() {
+        if( document.getElementById('idMasker') ) {
+            document.getElementById('idMasker').style.visibility = 'hidden';
+        }
+    }
 </script>
 </body>
 </html>
